@@ -42,9 +42,6 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 
   return (
     <div className="layers-panel">
-      <h3>Layers</h3>
-      <p className="layers-hint">Drag layers to reorder (top covers bottom)</p>
-
       <div className="layers-list">
         {layers.map((layer, index) => (
           <div
@@ -76,9 +73,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             <div
               className="layer-color"
               style={{
-                backgroundColor: `rgb(${getLayerRenderColor(layer.id).join(
-                  ", "
-                )})`,
+                backgroundColor: `rgb(${layer.color.join(", ")})`,
               }}
             />
             <span className="layer-name">{layer.name}</span>

@@ -14,7 +14,9 @@ export function getLayerRenderColor(layerId: number): [number, number, number] {
   const segmentValue = Math.floor((((layerId + 1) * 37) % 255) + 1);
 
   // Map segment value to color index using the same logic as the shader
-  const segmentIndex = Math.floor((segmentValue / 255) * 12);
+  const segmentIndex = Math.floor(
+    (segmentValue / 255) * SEGMENT_COLOR_PALETTE.length
+  );
 
   return SEGMENT_COLOR_PALETTE[segmentIndex] || SEGMENT_COLOR_PALETTE[0];
 }

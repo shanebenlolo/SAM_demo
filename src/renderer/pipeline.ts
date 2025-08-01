@@ -143,19 +143,15 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   let baseColor = textureSample(baseTexture, baseSampler, input.texCoord);
-  let maskValue = textureSample(maskTexture, baseSampler, input.texCoord).r;
+  let maskColor = textureSample(maskTexture, baseSampler, input.texCoord);
   
-  if (maskValue < 0.01) {
+  if (maskColor.r < 0.01) {
     return baseColor;
   }
   
-  // Color palette for segments (generated from centralized constants)
-  let colors = array<vec3<f32>, ${WEBGPU_COLOR_PALETTE.length}>(
-    ${colorArray}
-  );
-  
-  let segmentIndex = u32((maskValue * 255.0 / 255.0) * ${WEBGPU_COLOR_PALETTE.length}.0);
-  let segmentColor = colors[segmentIndex % ${WEBGPU_COLOR_PALETTE.length}];
+  // Directly use the RGB color values encoded in the mask
+  // Canvas now encodes the actual RGB values directly into the mask
+  let segmentColor = maskColor.rgb;
   
   return vec4<f32>(mix(baseColor.rgb, segmentColor, 0.4), 1.0);
 }

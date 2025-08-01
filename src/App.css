@@ -44,12 +44,16 @@
   }
 }
 
-.main-editor {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
+/* Left Sidebar with CSS Grid */
+.left-sidebar {
+  /* width: 350px; */
+  display: grid;
+  grid-template-rows: 1fr 3fr 1fr; /* ToolsPanel: 1/5, LayersPanel: 3/5, ImageInfo: 1/5 */
   gap: 1.5rem;
+  padding: 2rem;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-primary);
+  overflow: hidden;
 }
 
 /* Canvas Section */
@@ -58,11 +62,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--border-primary);
-  border-radius: 8px;
   padding: 2rem;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
 }
 
 .canvas-section canvas {
@@ -100,7 +102,13 @@
     min-height: calc(100vh - 160px);
   }
 
-  .main-editor {
+  .left-sidebar {
+    width: 100%;
+    grid-template-rows: auto auto auto; /* Stack components naturally on mobile */
+    padding: 1.5rem;
+  }
+
+  .canvas-section {
     padding: 1.5rem;
   }
 }

@@ -1,13 +1,13 @@
 /* LayersPanel Component Styles */
 
 .layers-panel {
-  width: 350px;
-  min-width: 350px;
   background: var(--bg-tertiary);
-  border-right: 1px solid var(--border-primary);
-  padding: 2rem;
+  border-radius: 8px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .layers-panel h3 {
@@ -174,28 +174,9 @@
 }
 
 /* Responsive design */
-@media (max-width: 1400px) {
-  .layers-panel {
-    width: 320px;
-    min-width: 320px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .layers-panel {
-    width: 280px;
-    min-width: 280px;
-    padding: 1.5rem;
-  }
-}
-
 @media (max-width: 768px) {
   .layers-panel {
-    width: 100%;
-    min-width: auto;
-    max-height: 250px;
-    border-right: none;
-    border-bottom: 1px solid var(--border-primary);
+    max-height: none; /* Allow natural height on mobile */
   }
 }
 

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { WebGPURenderer } from "../../renderer/pipeline";
 import type { SegmentLayer, WebGPUCanvasProps } from "../../types";
+import { SEGMENT_COLOR_PALETTE } from "../../constants/colors";
 import "./Canvas.css";
 
 export const Canvas: React.FC<WebGPUCanvasProps> = ({
@@ -78,18 +79,14 @@ export const Canvas: React.FC<WebGPUCanvasProps> = ({
         );
         const data = imageData.data;
 
-        // Use the layer's unique ID to assign a permanent color that never changes
-        // This ensures colors stay consistent regardless of reordering or visibility
-        const segmentValue = Math.floor(
-          (((layer.id + 1) * 37) % 255) + 1 // Use modular arithmetic to distribute colors evenly
-        );
-
         for (let i = 0; i < data.length; i += 4) {
           if (data[i] > 128) {
-            // If pixel is part of segment
-            data[i] = segmentValue; // R
-            data[i + 1] = segmentValue; // G
-            data[i + 2] = segmentValue; // B
+            // Directly encode the layer's RGB color into the mask
+            // This eliminates any ID encoding/decoding issues
+            const [r, g, b] = layer.color;
+            data[i] = r; // R
+            data[i + 1] = g; // G
+            data[i + 2] = b; // B
             data[i + 3] = 255; // A
           } else {
             data[i + 3] = 0; // Make transparent
@@ -131,23 +128,33 @@ export const Canvas: React.FC<WebGPUCanvasProps> = ({
       const ctx = selectedLayer.canvas.getContext("2d");
       if (!ctx) return;
 
+      // Scale coordinates from display canvas to layer canvas
+      const scaleX = selectedLayer.canvas.width / width;
+      const scaleY = selectedLayer.canvas.height / height;
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+      const scaledBrushSize = brushSize * Math.min(scaleX, scaleY);
+
       // Set up drawing style
       ctx.globalCompositeOperation = isErasing
         ? "destination-out"
         : "source-over";
       ctx.fillStyle = isErasing ? "rgba(0,0,0,1)" : "white";
       ctx.beginPath();
-      ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+      ctx.arc(scaledX, scaledY, scaledBrushSize / 2, 0, Math.PI * 2);
       ctx.fill();
 
       // If we have a previous position, draw a line to create smooth strokes
       if (lastMousePos && !isErasing) {
-        ctx.lineWidth = brushSize;
+        const scaledLastX = lastMousePos.x * scaleX;
+        const scaledLastY = lastMousePos.y * scaleY;
+
+        ctx.lineWidth = scaledBrushSize;
         ctx.lineCap = "round";
         ctx.strokeStyle = "white";
         ctx.beginPath();
-        ctx.moveTo(lastMousePos.x, lastMousePos.y);
-        ctx.lineTo(x, y);
+        ctx.moveTo(scaledLastX, scaledLastY);
+        ctx.lineTo(scaledX, scaledY);
         ctx.stroke();
       }
 
@@ -167,6 +174,8 @@ export const Canvas: React.FC<WebGPUCanvasProps> = ({
       lastMousePos,
       baseImage,
       createCompositeMask,
+      width,
+      height,
     ]
   );
 

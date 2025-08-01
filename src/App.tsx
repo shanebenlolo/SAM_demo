@@ -223,23 +223,7 @@ function App() {
 
         {state.uploadedImage && state.segmentLayers.length > 0 && (
           <div className="editor-layout">
-            <LayersPanel
-              layers={state.segmentLayers}
-              selectedLayerId={state.selectedLayerId}
-              draggedLayerId={state.draggedLayerId}
-              dragOverLayerId={state.dragOverLayerId}
-              isDownloading={state.isDownloading}
-              onLayerSelect={selectLayer}
-              onLayerVisibilityToggle={toggleLayerVisibility}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-              onDownloadSegments={handleDownloadSegments}
-            />
-
-            <div className="main-editor">
+            <div className="left-sidebar">
               <ToolsPanel
                 selectedTool={state.selectedTool}
                 brushSize={state.brushSize}
@@ -247,17 +231,21 @@ function App() {
                 onBrushSizeChange={handleBrushSizeChange}
               />
 
-              <div className="canvas-section">
-                <Canvas
-                  baseImage={state.uploadedImage}
-                  segmentLayers={state.segmentLayers}
-                  selectedLayerId={state.selectedLayerId}
-                  selectedTool={state.selectedTool}
-                  brushSize={state.brushSize}
-                  width={state.canvasSize.width}
-                  height={state.canvasSize.height}
-                />
-              </div>
+              <LayersPanel
+                layers={state.segmentLayers}
+                selectedLayerId={state.selectedLayerId}
+                draggedLayerId={state.draggedLayerId}
+                dragOverLayerId={state.dragOverLayerId}
+                isDownloading={state.isDownloading}
+                onLayerSelect={selectLayer}
+                onLayerVisibilityToggle={toggleLayerVisibility}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                onDownloadSegments={handleDownloadSegments}
+              />
 
               <ImageInfo
                 originalWidth={state.uploadedImage.width}
@@ -265,6 +253,18 @@ function App() {
                 displayWidth={state.canvasSize.width}
                 displayHeight={state.canvasSize.height}
                 layerCount={state.segmentLayers.length}
+              />
+            </div>
+
+            <div className="canvas-section">
+              <Canvas
+                baseImage={state.uploadedImage}
+                segmentLayers={state.segmentLayers}
+                selectedLayerId={state.selectedLayerId}
+                selectedTool={state.selectedTool}
+                brushSize={state.brushSize}
+                width={state.canvasSize.width}
+                height={state.canvasSize.height}
               />
             </div>
           </div>

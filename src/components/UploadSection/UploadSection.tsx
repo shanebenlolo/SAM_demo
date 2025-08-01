@@ -2,7 +2,7 @@
  * UploadSection component - handles file upload and reset functionality
  */
 
-import React from "react";
+import React, { useRef } from "react";
 import "./UploadSection.css";
 
 interface UploadSectionProps {
@@ -18,9 +18,20 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   isProcessing,
   hasImage,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReset = () => {
+    // Clear the file input value to allow re-selecting the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    onReset();
+  };
+
   return (
     <div className="upload-section">
       <input
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={onFileUpload}
@@ -33,7 +44,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
       </label>
 
       {hasImage && (
-        <button onClick={onReset} className="reset-button">
+        <button onClick={handleReset} className="reset-button">
           Reset
         </button>
       )}
