@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { WebGPUCanvas } from "./WebGPUCanvas";
 import { segmentImage, urlToImage, base64ToImage } from "./replicate";
 import type { SegmentLayer } from "./replicate";
+import JSZip from "jszip";
 import "./App.css";
 
 // Function to get the actual rendered color for a layer based on its ID
@@ -41,6 +42,7 @@ interface AppState {
   selectedTool: Tool;
   brushSize: number;
   isProcessing: boolean;
+  isDownloading: boolean;
   error: string | null;
   canvasSize: { width: number; height: number };
   draggedLayerId: number | null;
@@ -55,6 +57,7 @@ function App() {
     selectedTool: "pencil",
     brushSize: 10,
     isProcessing: false,
+    isDownloading: false,
     error: null,
     canvasSize: { width: 800, height: 600 },
     draggedLayerId: null,
@@ -147,6 +150,7 @@ function App() {
       selectedTool: "pencil",
       brushSize: 10,
       isProcessing: false,
+      isDownloading: false,
       error: null,
       canvasSize: { width: 800, height: 600 },
       draggedLayerId: null,
@@ -255,6 +259,132 @@ function App() {
     }));
   };
 
+  // Function to create a segment image with transparent background using current edited state
+  const createSegmentImage = async (
+    layer: SegmentLayer,
+    baseImage: HTMLImageElement
+  ): Promise<Blob> => {
+    // Create a canvas for the segment
+    const canvas = document.createElement("canvas");
+    canvas.width = baseImage.width;
+    canvas.height = baseImage.height;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Failed to get canvas context");
+    }
+
+    // Draw the base image
+    ctx.drawImage(baseImage, 0, 0);
+
+    // Get the image data
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Use the current edited layer canvas instead of the original maskBase64
+    const layerCanvas = layer.canvas;
+    const layerCtx = layerCanvas.getContext("2d");
+
+    if (!layerCtx) {
+      throw new Error("Failed to get layer canvas context");
+    }
+
+    // Get the current edited mask data from the layer canvas
+    const maskData = layerCtx.getImageData(
+      0,
+      0,
+      layerCanvas.width,
+      layerCanvas.height
+    );
+    const maskPixels = maskData.data;
+
+    // Calculate scale factors if dimensions don't match
+    const scaleX = layerCanvas.width / canvas.width;
+    const scaleY = layerCanvas.height / canvas.height;
+
+    // Apply the mask - set pixels to transparent where mask is black
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const pixelIndex = (y * canvas.width + x) * 4;
+
+        // Get corresponding mask pixel coordinates
+        const maskX = Math.floor(x * scaleX);
+        const maskY = Math.floor(y * scaleY);
+        const maskIndex = (maskY * layerCanvas.width + maskX) * 4;
+
+        // Check if mask pixel is black (segment not included)
+        // The layer canvas uses white pixels for the segment, black for non-segment
+        const maskValue = maskPixels[maskIndex]; // Red channel
+
+        if (maskValue < 128) {
+          // If mask is dark (not part of segment)
+          data[pixelIndex + 3] = 0; // Set alpha to 0 (transparent)
+        }
+      }
+    }
+
+    // Put the modified image data back
+    ctx.putImageData(imageData, 0, 0);
+
+    // Convert to blob
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Failed to create blob"));
+        }
+      }, "image/png");
+    });
+  };
+
+  // Function to download all segments as a zip
+  const downloadSegments = async () => {
+    if (!state.uploadedImage || state.segmentLayers.length === 0) return;
+
+    try {
+      setState((prev) => ({ ...prev, isDownloading: true }));
+
+      const zip = new JSZip();
+
+      // Process each visible segment
+      for (const layer of state.segmentLayers) {
+        if (layer.visible) {
+          try {
+            const segmentBlob = await createSegmentImage(
+              layer,
+              state.uploadedImage
+            );
+            zip.file(`${layer.name}.png`, segmentBlob);
+          } catch (error) {
+            console.warn(`Failed to process ${layer.name}:`, error);
+          }
+        }
+      }
+
+      // Generate and download the zip
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      // Create download link
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "segments.zip";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error creating segment download:", error);
+      setState((prev) => ({
+        ...prev,
+        error: "Failed to create segment download",
+      }));
+    } finally {
+      setState((prev) => ({ ...prev, isDownloading: false }));
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -299,6 +429,19 @@ function App() {
             <p>Generating segmentation layers...</p>
             <p>
               <small>This may take 10-30 seconds</small>
+            </p>
+          </div>
+        )}
+
+        {state.isDownloading && (
+          <div className="processing-message">
+            <div className="spinner"></div>
+            <p>Creating segment images...</p>
+            <p>
+              <small>
+                Processing {state.segmentLayers.filter((l) => l.visible).length}{" "}
+                segments
+              </small>
             </p>
           </div>
         )}
@@ -351,6 +494,21 @@ function App() {
                   </div>
                 ))}
               </div>
+
+              {/* Download Button */}
+              <button
+                onClick={downloadSegments}
+                disabled={
+                  state.isDownloading ||
+                  state.segmentLayers.filter((l) => l.visible).length === 0
+                }
+                className="download-button"
+                title="Download visible segments as ZIP"
+              >
+                {state.isDownloading
+                  ? "Creating ZIP..."
+                  : "📦 Download Segments"}
+              </button>
             </div>
 
             {/* Main Content Area */}
@@ -434,6 +592,10 @@ function App() {
               <li>Select a segment layer to edit it</li>
               <li>Choose pencil ✏️ to add or eraser 🗑️ to remove</li>
               <li>Adjust brush size and start editing!</li>
+              <li>
+                Click "📦 Download Segments" to save visible layers as PNG files
+                in a ZIP
+              </li>
             </ol>
             <p>
               <strong>Note:</strong> This demo requires a browser that supports
