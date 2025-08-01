@@ -1,23 +1,64 @@
 import React, { useState } from "react";
 import { WebGPUCanvas } from "./WebGPUCanvas";
 import { segmentImage, urlToImage, base64ToImage } from "./replicate";
+import type { SegmentLayer } from "./replicate";
 import "./App.css";
+
+// Function to get the actual rendered color for a layer based on its ID
+// This matches the color calculation used in WebGPUCanvas and the shader
+function getLayerRenderColor(layerId: number): [number, number, number] {
+  // Calculate segment value using the same formula as WebGPUCanvas
+  const segmentValue = Math.floor((((layerId + 1) * 37) % 255) + 1);
+
+  // Map segment value to color index using the same logic as the shader
+  const segmentIndex = Math.floor((segmentValue / 255) * 12);
+
+  // Color palette from the shader (converted from 0-1 to 0-255 range)
+  const colors: [number, number, number][] = [
+    [255, 51, 51], // Red
+    [51, 255, 51], // Green
+    [51, 102, 255], // Blue
+    [255, 255, 51], // Yellow
+    [255, 51, 255], // Magenta
+    [51, 255, 255], // Cyan
+    [255, 153, 51], // Orange
+    [153, 51, 255], // Purple
+    [51, 255, 153], // Spring Green
+    [255, 204, 51], // Gold
+    [204, 51, 153], // Pink
+    [102, 204, 255], // Light Blue
+  ];
+
+  return colors[segmentIndex] || colors[0];
+}
+
+type Tool = "pencil" | "eraser";
 
 interface AppState {
   uploadedImage: HTMLImageElement | null;
-  maskImage: HTMLImageElement | null;
+  segmentLayers: SegmentLayer[];
+  selectedLayerId: number | null;
+  selectedTool: Tool;
+  brushSize: number;
   isProcessing: boolean;
   error: string | null;
   canvasSize: { width: number; height: number };
+  draggedLayerId: number | null;
+  dragOverLayerId: number | null;
 }
 
 function App() {
   const [state, setState] = useState<AppState>({
     uploadedImage: null,
-    maskImage: null,
+    segmentLayers: [],
+    selectedLayerId: null,
+    selectedTool: "pencil",
+    brushSize: 10,
     isProcessing: false,
     error: null,
     canvasSize: { width: 800, height: 600 },
+    draggedLayerId: null,
+    dragOverLayerId: null,
   });
 
   const handleFileUpload = async (
@@ -56,12 +97,12 @@ function App() {
       }));
 
       // Send to Replicate API for segmentation
-      const maskBase64 = await segmentImage(file);
-      const maskImage = await base64ToImage(maskBase64);
+      const layers = await segmentImage(file);
 
       setState((prev) => ({
         ...prev,
-        maskImage,
+        segmentLayers: layers,
+        selectedLayerId: layers.length > 0 ? layers[0].id : null,
         isProcessing: false,
       }));
 
@@ -101,20 +142,126 @@ function App() {
   const resetApp = () => {
     setState({
       uploadedImage: null,
-      maskImage: null,
+      segmentLayers: [],
+      selectedLayerId: null,
+      selectedTool: "pencil",
+      brushSize: 10,
       isProcessing: false,
       error: null,
       canvasSize: { width: 800, height: 600 },
+      draggedLayerId: null,
+      dragOverLayerId: null,
     });
+  };
+
+  const toggleLayerVisibility = (layerId: number) => {
+    setState((prev) => ({
+      ...prev,
+      segmentLayers: prev.segmentLayers.map((layer) =>
+        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
+      ),
+    }));
+  };
+
+  const selectLayer = (layerId: number) => {
+    setState((prev) => ({
+      ...prev,
+      selectedLayerId: layerId,
+    }));
+  };
+
+  const selectTool = (tool: Tool) => {
+    setState((prev) => ({
+      ...prev,
+      selectedTool: tool,
+    }));
+  };
+
+  const setBrushSize = (size: number) => {
+    setState((prev) => ({
+      ...prev,
+      brushSize: size,
+    }));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, layerId: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    setState((prev) => ({
+      ...prev,
+      draggedLayerId: layerId,
+    }));
+  };
+
+  const handleDragOver = (e: React.DragEvent, layerId: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setState((prev) => ({
+      ...prev,
+      dragOverLayerId: layerId,
+    }));
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setState((prev) => ({
+      ...prev,
+      dragOverLayerId: null,
+    }));
+  };
+
+  const handleDrop = (e: React.DragEvent, targetLayerId: number) => {
+    e.preventDefault();
+
+    if (
+      state.draggedLayerId === null ||
+      state.draggedLayerId === targetLayerId
+    ) {
+      setState((prev) => ({
+        ...prev,
+        draggedLayerId: null,
+        dragOverLayerId: null,
+      }));
+      return;
+    }
+
+    const draggedIndex = state.segmentLayers.findIndex(
+      (layer) => layer.id === state.draggedLayerId
+    );
+    const targetIndex = state.segmentLayers.findIndex(
+      (layer) => layer.id === targetLayerId
+    );
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Create new array with reordered layers
+    const newLayers = [...state.segmentLayers];
+    const [draggedLayer] = newLayers.splice(draggedIndex, 1);
+    newLayers.splice(targetIndex, 0, draggedLayer);
+
+    setState((prev) => ({
+      ...prev,
+      segmentLayers: newLayers,
+      draggedLayerId: null,
+      dragOverLayerId: null,
+    }));
+  };
+
+  const handleDragEnd = () => {
+    setState((prev) => ({
+      ...prev,
+      draggedLayerId: null,
+      dragOverLayerId: null,
+    }));
   };
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>WebGPU Image Segmentation Visualizer</h1>
+        <h1>WebGPU Interactive Segmentation Editor</h1>
         <p>
-          Upload an image to generate a segmentation mask using Meta's SAM-2
-          model
+          Upload an image to generate segmentations using Meta's SAM-2 model,
+          then edit them interactively
         </p>
       </header>
 
@@ -149,36 +296,136 @@ function App() {
         {state.isProcessing && (
           <div className="processing-message">
             <div className="spinner"></div>
-            <p>Generating segmentation mask...</p>
+            <p>Generating segmentation layers...</p>
             <p>
               <small>This may take 10-30 seconds</small>
             </p>
           </div>
         )}
 
-        {state.uploadedImage && (
-          <div className="canvas-section">
-            <h2>Result:</h2>
-            <p>
-              {state.maskImage
-                ? "Each detected object is highlighted in a different color"
-                : "Generating segmentation mask..."}
-            </p>
-            <WebGPUCanvas
-              baseImage={state.uploadedImage}
-              maskImage={state.maskImage}
-              width={state.canvasSize.width}
-              height={state.canvasSize.height}
-            />
-            <div className="image-info">
-              <p>
-                Original size: {state.uploadedImage.width} ×{" "}
-                {state.uploadedImage.height}px
+        {state.uploadedImage && state.segmentLayers.length > 0 && (
+          <div className="editor-layout">
+            {/* Left Sidebar - Layers Panel */}
+            <div className="layers-panel">
+              <h3>Layers</h3>
+              <p className="layers-hint">
+                Drag layers to reorder (top covers bottom)
               </p>
-              <p>
-                Display size: {state.canvasSize.width} ×{" "}
-                {state.canvasSize.height}px
-              </p>
+              <div className="layers-list">
+                {state.segmentLayers.map((layer, index) => (
+                  <div
+                    key={layer.id}
+                    className={`layer-item ${
+                      state.selectedLayerId === layer.id ? "selected" : ""
+                    } ${state.draggedLayerId === layer.id ? "dragging" : ""} ${
+                      state.dragOverLayerId === layer.id ? "drag-over" : ""
+                    }`}
+                    onClick={() => selectLayer(layer.id)}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, layer.id)}
+                    onDragOver={(e) => handleDragOver(e, layer.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, layer.id)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <span className="layer-order">{index + 1}</span>
+                    <div className="drag-handle">⋮⋮</div>
+                    <button
+                      className="layer-visibility"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLayerVisibility(layer.id);
+                      }}
+                    >
+                      {layer.visible ? "👁️" : "👁️‍🗨️"}
+                    </button>
+                    <div
+                      className="layer-color"
+                      style={{
+                        backgroundColor: `rgb(${getLayerRenderColor(
+                          layer.id
+                        ).join(", ")})`,
+                      }}
+                    />
+                    <span className="layer-name">{layer.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="main-editor">
+              {/* Top Toolbar */}
+              <div className="tools-panel">
+                <div className="tool-group">
+                  <button
+                    className={`tool-button ${
+                      state.selectedTool === "pencil" ? "selected" : ""
+                    }`}
+                    onClick={() => selectTool("pencil")}
+                    title="Pencil Tool"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className={`tool-button ${
+                      state.selectedTool === "eraser" ? "selected" : ""
+                    }`}
+                    onClick={() => selectTool("eraser")}
+                    title="Eraser Tool"
+                  >
+                    🗑️
+                  </button>
+                </div>
+
+                <div className="brush-controls">
+                  <label htmlFor="brush-size">
+                    Brush Size: {state.brushSize}px
+                  </label>
+                  <input
+                    id="brush-size"
+                    type="range"
+                    min="1"
+                    max="50"
+                    value={state.brushSize}
+                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              {/* Canvas Area */}
+              <div className="canvas-section">
+                <WebGPUCanvas
+                  baseImage={state.uploadedImage}
+                  segmentLayers={state.segmentLayers}
+                  selectedLayerId={state.selectedLayerId}
+                  selectedTool={state.selectedTool}
+                  brushSize={state.brushSize}
+                  width={state.canvasSize.width}
+                  height={state.canvasSize.height}
+                />
+              </div>
+
+              {/* Info Panel */}
+              <div className="image-info">
+                <p>
+                  Original size: {state.uploadedImage.width} ×{" "}
+                  {state.uploadedImage.height}px
+                </p>
+                <p>
+                  Display size: {state.canvasSize.width} ×{" "}
+                  {state.canvasSize.height}px
+                </p>
+                <p>Layers: {state.segmentLayers.length}</p>
+                <p>
+                  Selected:{" "}
+                  {state.selectedLayerId !== null
+                    ? state.segmentLayers.find(
+                        (l) => l.id === state.selectedLayerId
+                      )?.name
+                    : "None"}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -191,7 +438,10 @@ function App() {
               <li>
                 Wait for the Replicate API to process the image with SAM-2
               </li>
-              <li>View the result rendered with WebGPU</li>
+              <li>Drag layers in the left panel to reorder them</li>
+              <li>Select a segment layer to edit it</li>
+              <li>Choose pencil ✏️ to add or eraser 🗑️ to remove</li>
+              <li>Adjust brush size and start editing!</li>
             </ol>
             <p>
               <strong>Note:</strong> This demo requires a browser that supports
