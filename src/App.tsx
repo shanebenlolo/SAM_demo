@@ -417,14 +417,6 @@ function App() {
                   {state.canvasSize.height}px
                 </p>
                 <p>Layers: {state.segmentLayers.length}</p>
-                <p>
-                  Selected:{" "}
-                  {state.selectedLayerId !== null
-                    ? state.segmentLayers.find(
-                        (l) => l.id === state.selectedLayerId
-                      )?.name
-                    : "None"}
-                </p>
               </div>
             </div>
           </div>
