@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { WebGPURenderer } from "../../renderer/pipeline";
-import type { SegmentLayer, WebGPUCanvasProps } from "../../types";
-import { SEGMENT_COLOR_PALETTE } from "../../constants/colors";
+import type { WebGPUCanvasProps } from "../../types";
 import "./Canvas.css";
 
 export const Canvas: React.FC<WebGPUCanvasProps> = ({

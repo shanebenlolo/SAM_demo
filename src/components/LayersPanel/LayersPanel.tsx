@@ -4,7 +4,7 @@
 
 import React from "react";
 import type { SegmentLayer } from "../../types";
-import { getLayerRenderColor, getVisibleLayers } from "../../utils/layer";
+import { getVisibleLayers } from "../../utils/layer";
 import "./LayersPanel.css";
 
 interface LayersPanelProps {

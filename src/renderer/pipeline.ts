@@ -11,7 +11,6 @@ export class WebGPURenderer {
   private sampler!: GPUSampler;
   private uniformBuffer!: GPUBuffer;
   private bindGroup!: GPUBindGroup;
-  private canvas!: HTMLCanvasElement;
 
   static isSupported(): boolean {
     return !!navigator.gpu;
@@ -26,8 +25,6 @@ export class WebGPURenderer {
     baseImage: HTMLImageElement;
     maskImage: HTMLImageElement | null;
   }): Promise<void> {
-    this.canvas = canvas;
-
     // Get GPU adapter and device
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
@@ -100,14 +97,6 @@ export class WebGPURenderer {
   }
 
   private async getShaderCode(): Promise<string> {
-    // Generate shader code with centralized color palette
-    const { WEBGPU_COLOR_PALETTE } = await import("../constants/colors");
-
-    const colorArray = WEBGPU_COLOR_PALETTE.map(
-      ([r, g, b]) =>
-        `vec3<f32>(${r.toFixed(1)}, ${g.toFixed(1)}, ${b.toFixed(1)})`
-    ).join(",\n    ");
-
     return `
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,

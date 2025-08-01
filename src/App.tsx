@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from "react";
-import type { AppState, SegmentLayer, Tool } from "./types";
+import type { AppState, Tool } from "./types";
 import {
   Header,
   UploadSection,
@@ -17,7 +17,7 @@ import {
 import { segmentImage } from "./services/segmentation";
 import { downloadSegments } from "./services/download";
 import { urlToImage, calculateCanvasSize } from "./utils/image";
-import { getVisibleLayers, reorderLayers, findLayerById } from "./utils/layer";
+import { getVisibleLayers, reorderLayers } from "./utils/layer";
 import "./App.css";
 
 function App() {

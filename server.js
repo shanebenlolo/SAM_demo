@@ -3,12 +3,18 @@ import cors from "cors";
 import multer from "multer";
 import Replicate from "replicate";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Load environment variables
 dotenv.config();
 
+// ES module directory resolution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 // Configure multer for file uploads
 const upload = multer({
@@ -32,7 +38,10 @@ const replicate = new Replicate({
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Frontend will always be on port 5173 now
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL
+        : "http://localhost:5173",
     credentials: true,
   })
 );
@@ -105,6 +114,24 @@ app.post("/api/segment", upload.single("image"), async (req, res) => {
       error: "Failed to process image",
       message: error.message,
     });
+  }
+});
+
+// Serve static files from the built React app
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    fallthrough: true,
+  })
+);
+
+// Fallback route for React Router (SPA support)
+// Handle any GET request that doesn't match API routes or static files
+app.use((req, res, next) => {
+  // Only handle GET requests that aren't API routes
+  if (req.method === "GET" && !req.path.startsWith("/api/")) {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  } else {
+    next();
   }
 });
 

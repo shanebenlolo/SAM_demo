@@ -15,17 +15,34 @@ async function callSegmentationAPI(
   const formData = new FormData();
   formData.append("image", imageFile);
 
-  const response = await fetch("http://localhost:3001/api/segment", {
+  const response = await fetch("/api/segment", {
     method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Server error: ${response.status}`);
+    let errorMessage = `Server error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch {
+      // If response isn't JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
   }
 
-  return await response.json();
+  let result;
+  try {
+    result = await response.json();
+  } catch (error) {
+    console.error("Failed to parse JSON response:", error);
+    console.error("Response status:", response.status);
+    console.error("Response headers:", response.headers);
+    throw new Error("Invalid response from server - please check API endpoint");
+  }
+
+  return result;
 }
 
 /**

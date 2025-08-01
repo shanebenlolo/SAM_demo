@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: sam-demo
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_REPLICATE_API_TOKEN
+        sync: false # This will be set manually in Render dashboard
