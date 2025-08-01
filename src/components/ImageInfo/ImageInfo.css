@@ -1,0 +1,37 @@
+/* ImageInfo Component Styles */
+
+.image-info {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-around;
+  gap: 2rem;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.image-info p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.image-info p::before {
+  content: "●";
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .image-info {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}

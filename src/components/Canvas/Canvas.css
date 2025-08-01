@@ -1,0 +1,18 @@
+/* Canvas Component Styles */
+
+/* Canvas is now self-contained and uses inline styles for its states */
+/* The canvas wrapper styling is handled by the parent component in App.css */
+
+/* Additional canvas-specific styles if needed */
+canvas {
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Responsive canvas behavior */
+@media (max-width: 768px) {
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}

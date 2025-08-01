@@ -1,0 +1,106 @@
+/* ToolsPanel Component Styles */
+
+.tools-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.tool-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tool-button {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  min-height: 50px;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.tool-button.selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.brush-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brush-controls label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.brush-controls input[type="range"] {
+  width: 150px;
+  height: 6px;
+  background: var(--bg-primary);
+  outline: none;
+  border-radius: 3px;
+  -webkit-appearance: none;
+}
+
+.brush-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.brush-controls input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tools-panel {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: stretch;
+    padding: 1.5rem;
+  }
+
+  .brush-controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tool-button {
+    min-width: 45px;
+    min-height: 45px;
+    font-size: 1.2rem;
+  }
+
+  .brush-controls input[type="range"] {
+    width: 120px;
+  }
+}

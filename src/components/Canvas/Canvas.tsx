@@ -1,18 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { WebGPURenderer } from "./webgpuRenderer";
-import type { SegmentLayer } from "./replicate";
+import { WebGPURenderer } from "../../renderer/pipeline";
+import type { SegmentLayer, WebGPUCanvasProps } from "../../types";
+import "./Canvas.css";
 
-interface WebGPUCanvasProps {
-  baseImage: HTMLImageElement | null;
-  segmentLayers: SegmentLayer[];
-  selectedLayerId: number | null;
-  selectedTool: "pencil" | "eraser";
-  brushSize: number;
-  width: number;
-  height: number;
-}
-
-export const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
+export const Canvas: React.FC<WebGPUCanvasProps> = ({
   baseImage,
   segmentLayers,
   selectedLayerId,
@@ -160,22 +151,13 @@ export const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         ctx.stroke();
       }
 
-      // Trigger re-render by updating the layers (this will cause useEffect to re-run)
-      // We need to trigger a re-render of the WebGPU canvas
-      if (rendererRef.current) {
-        // Re-initialize the renderer to update the composite
-        const canvas = canvasRef.current;
-        if (canvas && baseImage) {
-          createCompositeMask().then((compositeMask) => {
-            if (rendererRef.current) {
-              rendererRef.current.initialize({
-                canvas,
-                baseImage,
-                maskImage: compositeMask,
-              });
-            }
-          });
-        }
+      // Update the renderer without full reinitialization
+      if (rendererRef.current && canvasRef.current && baseImage) {
+        createCompositeMask().then((compositeMask) => {
+          if (rendererRef.current) {
+            rendererRef.current.updateMask(compositeMask);
+          }
+        });
       }
     },
     [

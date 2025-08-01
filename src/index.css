@@ -17,6 +17,36 @@
 
   /* Scroll behavior */
   scroll-behavior: smooth;
+
+  /* Dark Theme Colors */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a24;
+  --bg-tertiary: #2a2a3a;
+  --bg-glass: rgba(26, 26, 36, 0.95);
+
+  /* Accent Colors */
+  --accent-primary: #6366f1;
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #06b6d4;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+
+  /* Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+
+  /* Border Colors */
+  --border-primary: rgba(148, 163, 184, 0.2);
+  --border-accent: rgba(99, 102, 241, 0.3);
+  --border-glass: rgba(255, 255, 255, 0.1);
+
+  /* Simple Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Global reset */
